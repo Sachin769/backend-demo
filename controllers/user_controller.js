@@ -41,20 +41,22 @@ module.exports.userRegisteration = async (req, resp) => {
     try {
         const validatedUserRegisteration = await validateUserRegisteration.validateAsync(req.body);
         const checkAlreadyExistUser = await haModel.userProfileExist(req.body);
-        if (checkAlreadyExistUser.code === 500) {
+        if (checkAlreadyExistUser?.code === 500) {
             return resp.status(500).json(checkAlreadyExistUser);
         }
-        if(checkAlreadyExistUser.email === req.body.email && checkAlreadyExistUser.mobile_no !== req.body.mobile_no){
-            dataSet = response(422,"Already Email Exist");
-            return resp.status(422).json(dataSet);
-        }
-        if(checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email !== req.body.email){
-            dataSet = response(422,"Already Mobile No. Exist");
-            return resp.status(422).json(dataSet);
-        }
-        if (checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email === req.body.email) {
-            dataSet = response(422, "Already Exists User with Same mobile no and Email");
-            return resp.status(422).json(dataSet);
+        if(checkAlreadyExistUser){
+            if(checkAlreadyExistUser.email === req.body.email && checkAlreadyExistUser.mobile_no !== req.body.mobile_no){
+                dataSet = response(422,"Already Email Exist");
+                return resp.status(422).json(dataSet);
+            }
+            if(checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email !== req.body.email){
+                dataSet = response(422,"Already Mobile No. Exist");
+                return resp.status(422).json(dataSet);
+            }
+            if (checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email === req.body.email) {
+                dataSet = response(422, "Already Exists User with Same mobile no and Email");
+                return resp.status(422).json(dataSet);
+            }
         }
         const insertUserRegisteration = await haModel.insertNewUserRegisteration(req.body);
         if (insertUserRegisteration.code === 500) {

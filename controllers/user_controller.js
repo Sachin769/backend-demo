@@ -39,6 +39,7 @@ module.exports.verifyUserToken = async (req, resp, next) => {
 
 module.exports.userRegisteration = async (req, resp) => {
     try {
+        console.log("req.body",req.body);
         const validatedUserRegisteration = await validateUserRegisteration.validateAsync(req.body);
         const checkAlreadyExistUser = await haModel.userProfileExist(req.body);
         if (checkAlreadyExistUser?.code === 500) {

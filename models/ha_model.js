@@ -17,8 +17,7 @@ module.exports.userProfileExist = async (req, resp) => {
             ],
             is_active: true
         }
-        const fetchQuery = await dbSchema.UserProfile.countDocuments(filter).lean();
-        console.log("fetchQuery",fetchQuery);
+        const fetchQuery = await dbSchema.UserProfile.findOne(filter).lean();
         return fetchQuery;
     } catch (e) {
         return response(500, "Error In Modals", e.message);

@@ -19,12 +19,12 @@ module.exports.verifyUserToken = async (req, resp, next) => {
             return;
         }
         const validateToken = await jwt.verify(req.headers.authorization, process.env.ACCESS_TOKEN_SALT);
-        const fetchToken = await haModel.fetchUserProfileViaId(validateToken._id);
+        const fetchToken = await haModel.fetchUserProfileViaId(validateToken.user_id);
         if (fetchToken.code === 500) {
             resp.status(500).json(fetchToken);
             return;
         }
-        if (fetchToken[0].access_token !== access_token) {
+        if (fetchToken.access_token !== access_token) {
             dataSet = response(422, "Token Is Invalid", req.headers.authorization);
             resp.status(422).json(dataSet);
             return;
@@ -121,7 +121,7 @@ module.exports.verifyUserOTP = async (req, resp) => {
     try {
         const validatedUserOTP = await validateUserOTP.validateAsync(req.body);
         const fetchUserProfile = await haModel.fetchUserProfile(req.body);
-        if (fetchUserProfile.code === 500) {
+        if (fetchUserProfile?.code === 500) {
             return resp.status(500).json(fetchUserProfile);
         }
         if (!fetchUserProfile) {
@@ -147,6 +147,55 @@ module.exports.verifyUserOTP = async (req, resp) => {
         resp.status(422).json(dataSet);
     }
 }
+
+
+
+
+module.exports.addDeviceModel = async (req,resp) => {
+    try{
+        const validatedDeviceModal = await validateDeviceModal.validateAsync(req.body);
+        const addDeviceModal = await haModel.addDeviceModal(req.body);
+        if(addDeviceModal.code === 500){
+            return resp.status(500).json(addDeviceModal);
+        }
+        dataSet = response(200,"Device Modal Added Successfully");
+        resp.status(200).json(dataSet);
+    }catch(e){
+        dataSet = response(422,"Error In Modal",e.message);
+        resp.status(422).json(dataSet);
+    }
+}
+
+module.exports.insertDeviceIP = async (req,resp) => {
+    try{
+        const validatedDeviceIP = await validateDeviceIP.validateAsync(req.body);
+        const insertDeviceIP = await haModel.insertDeviceIP(req.body);
+        if(insertDeviceIP.code === 500){
+            return resp.status(500).json(insertDeviceIP);
+        }
+        dataSet = response(200,"Inserted Device Successfully");
+        resp.status(200).json(dataSet);
+    }catch(e){
+        dataSet = response(422,"Error In Modal",e.message);
+        resp.status(422).json(dataSet);
+    }
+}
+
+module.exports.fetchAllDeviceInfo = async (req,resp) => {
+    try{
+        const fetchAllDeviceInfo = await haModel.fetchAllDeviceInfo();
+        if(fetchAllDeviceInfo.code === 500){
+            return resp.status(500).json(fetchAllDeviceInfo);
+        }
+        dataSet = response(200,"All Device IP Success",fetchAllDeviceInfo);
+        resp.status(200).json(dataSet);
+    }catch(e){
+        dataSet = response(422,"Error In Controller",e.message);
+        resp.status(422).json(dataSet);
+    }
+}
+
+
 
 module.exports.forgetPassword = async (req, resp) => {
     try {
@@ -206,4 +255,13 @@ const validateForgetPassword = joi.object({
 const validateUpdatePassword = joi.object({
     user_id: joi.string().required(),
     new_password: joi.string().required()
+})
+
+const validateDeviceModal = joi.object({
+    device_model : joi.string().required()
+})
+
+const validateDeviceIP = joi.object({
+    device_id : joi.string().required(),
+    device_ip : joi.string().required()
 })

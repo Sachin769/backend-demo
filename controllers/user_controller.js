@@ -169,7 +169,7 @@ module.exports.addDeviceModel = async (req,resp) => {
         if(addDeviceModal.code === 500){
             return resp.status(500).json(addDeviceModal);
         }
-        dataSet = response(200,"Device Modal Added Successfully");
+        dataSet = response(200,"Device Modal Added Successfully",addDeviceModal._id);
         resp.status(200).json(dataSet);
     }catch(e){
         dataSet = response(422,"Error In Modal",e.message);

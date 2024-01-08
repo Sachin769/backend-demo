@@ -124,6 +124,19 @@ module.exports.fetchAllDeviceInfo = async (req,resp) => {
     }
 }
 
+module.exports.fetchDeviceInfo = async (req,resp) => {
+    try{
+        // const loginDetails = httpContext.get("loginDetails");
+        const filter = {
+            _id : req.device_id
+        }
+        const fetchQuery = await dbSchema.DeviceInformation.findById(filter).lean();
+        return fetchQuery;
+    }catch(e){
+        return response(500,"Error In Modal",e.message);
+    }
+}
+
 module.exports.fetchUserProfileViaId = async (userId, resp) => {
     try {
         const filter = {

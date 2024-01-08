@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const haModel = require("../models/ha_model");
 const response = require("../utils/api_response").response;
 const sendEmail = require("./send_email");
+const axios = require("axios");
 
 
 let dataSet = {};
@@ -39,19 +40,19 @@ module.exports.verifyUserToken = async (req, resp, next) => {
 
 module.exports.userRegisteration = async (req, resp) => {
     try {
-        console.log("req.body",req.body);
+        console.log("req.body", req.body);
         const validatedUserRegisteration = await validateUserRegisteration.validateAsync(req.body);
         const checkAlreadyExistUser = await haModel.userProfileExist(req.body);
         if (checkAlreadyExistUser?.code === 500) {
             return resp.status(500).json(checkAlreadyExistUser);
         }
-        if(checkAlreadyExistUser){
-            if(checkAlreadyExistUser.email === req.body.email && checkAlreadyExistUser.mobile_no !== req.body.mobile_no){
-                dataSet = response(201,"Already Email Exist");
+        if (checkAlreadyExistUser) {
+            if (checkAlreadyExistUser.email === req.body.email && checkAlreadyExistUser.mobile_no !== req.body.mobile_no) {
+                dataSet = response(201, "Already Email Exist");
                 return resp.status(201).json(dataSet);
             }
-            if(checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email !== req.body.email){
-                dataSet = response(201,"Already Mobile No. Exist");
+            if (checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email !== req.body.email) {
+                dataSet = response(201, "Already Mobile No. Exist");
                 return resp.status(201).json(dataSet);
             }
             if (checkAlreadyExistUser.mobile_no === req.body.mobile_no && checkAlreadyExistUser.email === req.body.email) {
@@ -86,6 +87,7 @@ module.exports.userRegisteration = async (req, resp) => {
 
 module.exports.userLogin = async (req, resp) => {
     try {
+        console.log("reqbody",req.body);
         const validatedUserLogin = await validateUserLogin.validateAsync(req.body);
         const fetchUserProfile = await haModel.fetchUserProfile(req.body);
         if ((!fetchUserProfile) || req.body.email !== fetchUserProfile.email) {
@@ -139,9 +141,9 @@ module.exports.verifyUserOTP = async (req, resp) => {
             dataSet = response(422, "Invalid Email");
             return resp.status(422).json(dataSet);
         }
-        const comparedOTP = await bcrypt.compare(req.body.otp,fetchUserProfile.otp);
-        if(!comparedOTP){
-            dataSet = response(200,"Invalid OTP");
+        const comparedOTP = await bcrypt.compare(req.body.otp, fetchUserProfile.otp);
+        if (!comparedOTP) {
+            dataSet = response(200, "Invalid OTP");
             return resp.status(200).json(dataSet);
         }
         if (comparedOTP) {
@@ -150,7 +152,7 @@ module.exports.verifyUserOTP = async (req, resp) => {
             if (updateToken.code === 500) {
                 return resp.status(500).json(updateToken);
             }
-            dataSet = response(200, "Login Successfully",{token,user_id:fetchUserProfile._id});
+            dataSet = response(200, "Login Successfully", { token, user_id: fetchUserProfile._id });
             resp.status(200).json(dataSet);
         }
     } catch (e) {
@@ -162,50 +164,154 @@ module.exports.verifyUserOTP = async (req, resp) => {
 
 
 
-module.exports.addDeviceModel = async (req,resp) => {
-    try{
+module.exports.addDeviceModel = async (req, resp) => {
+    try {
         const validatedDeviceModal = await validateDeviceModal.validateAsync(req.body);
         const addDeviceModal = await haModel.addDeviceModal(req.body);
-        if(addDeviceModal.code === 500){
+        if (addDeviceModal.code === 500) {
             return resp.status(500).json(addDeviceModal);
         }
-        dataSet = response(200,"Device Modal Added Successfully",addDeviceModal._id);
+        dataSet = response(200, "Device Modal Added Successfully", addDeviceModal._id);
         resp.status(200).json(dataSet);
-    }catch(e){
-        dataSet = response(422,"Error In Modal",e.message);
+    } catch (e) {
+        dataSet = response(422, "Error In Modal", e.message);
         resp.status(422).json(dataSet);
     }
 }
 
-module.exports.insertDeviceIP = async (req,resp) => {
-    try{
+module.exports.insertDeviceIP = async (req, resp) => {
+    try {
         const validatedDeviceIP = await validateDeviceIP.validateAsync(req.body);
         const insertDeviceIP = await haModel.insertDeviceIP(req.body);
-        if(insertDeviceIP.code === 500){
+        if (insertDeviceIP.code === 500) {
             return resp.status(500).json(insertDeviceIP);
         }
-        dataSet = response(200,"Inserted Device Successfully");
+        dataSet = response(200, "Inserted Device Successfully");
         resp.status(200).json(dataSet);
-    }catch(e){
-        dataSet = response(422,"Error In Modal",e.message);
+    } catch (e) {
+        dataSet = response(422, "Error In Modal", e.message);
         resp.status(422).json(dataSet);
     }
 }
 
-module.exports.fetchAllDeviceInfo = async (req,resp) => {
-    try{
+module.exports.fetchAllDeviceInfo = async (req, resp) => {
+    try {
+        // console.log("requete", req);
         const fetchAllDeviceInfo = await haModel.fetchAllDeviceInfo();
-        if(fetchAllDeviceInfo.code === 500){
+        if (fetchAllDeviceInfo.code === 500) {
             return resp.status(500).json(fetchAllDeviceInfo);
         }
-        dataSet = response(200,"All Device IP Success",fetchAllDeviceInfo);
+        dataSet = response(200, "All Device IP Success", fetchAllDeviceInfo);
         resp.status(200).json(dataSet);
-    }catch(e){
-        dataSet = response(422,"Error In Controller",e.message);
+    } catch (e) {
+        dataSet = response(422, "Error In Controller", e.message);
         resp.status(422).json(dataSet);
     }
 }
 
+module.exports.deviceONOFF = async (req, resp) => {
+    try {
+        console.log("final request body",req.body);
+        const fetchDeviceInfo = await haModel.fetchDeviceInfo(req.body);
+        if (fetchDeviceInfo.code === 500) {
+            return resp.status(500).json(fetchDeviceInfo);
+        }
+        let data = {
+            data: {
+                pulses: [
+                    {
+                        pulse: "on",
+                        switch: req.body.switch,
+                        width: 2000,
+                        outlet: 0
+                    },
+                    {
+                        pulse: "on",
+                        switch: "on",
+                        width: 2000,
+                        outlet: 1
+                    },
+                    {
+                        pulse: "off",
+                        switch: "on",
+                        width: 2000,
+                        outlet: 2
+                    },
+                    {
+                        pulse: "off",
+                        switch: "on",
+                        width: 2000,
+                        outlet: 3
+                    }
+                ]
+            }
+        }
+        console.log("data",data.pulses);
+
+        let config = {
+            method: 'post',
+            maxBodyLength: Infinity,
+            url: `http://${fetchDeviceInfo.device_ip}:8081/zeroconf/pulses`,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: data
+        };
+        console.log("config",config.data);
+        axios.request(config)
+            .then((response) => {
+                console.log(JSON.stringify(response.data));
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+        resp.status(200).json({ key: "value" });
+    } catch (e) {
+        dataSet = response(422, "Error In Controller", e.message);
+        resp.status(422).json(dataSet);
+    }
+}
+
+
+module.exports.dummyData = async (req, resp) => {
+    try {
+        const data = {
+            "data": {
+                "pulses": [
+                    {
+                        "pulse": "on",
+                        "switch": "on",
+                        "width": 2000,
+                        "outlet": 0
+                    },
+                    {
+                        "pulse": "on",
+                        "switch": "on",
+                        "width": 2000,
+                        "outlet": 1
+                    },
+                    {
+                        "pulse": "off",
+                        "switch": "on",
+                        "width": 2000,
+                        "outlet": 2
+                    },
+                    {
+                        "pulse": "off",
+                        "switch": "on",
+                        "width": 2000,
+                        "outlet": 3
+                    }
+                ]
+            }
+        }
+
+
+    } catch (e) {
+        dataSet = response(422, "Error In Controller", e.message);
+        resp.status(422).json(dataSet);
+    }
+}
 
 
 module.exports.forgetPassword = async (req, resp) => {
@@ -269,10 +375,10 @@ const validateUpdatePassword = joi.object({
 })
 
 const validateDeviceModal = joi.object({
-    device_model : joi.string().required()
+    device_model: joi.string().required()
 })
 
 const validateDeviceIP = joi.object({
-    device_id : joi.string().required(),
-    device_ip : joi.string().required()
+    device_id: joi.string().required(),
+    device_ip: joi.string().required()
 })

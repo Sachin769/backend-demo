@@ -37,6 +37,7 @@ app.use((req, resp, next) => {
 
 
 app.use("/api/user",userRoutes);
+// app.use("/dumy-data",userRoutes);
 
 
 
